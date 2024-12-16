@@ -1,0 +1,340 @@
+---
+title: "Interactive Bike Sales Analysis"
+author: "Salem Adel"
+format: 
+  html:
+    toc: true
+    code-fold: true
+---
+
+## Introduction
+
+This document explores the **Bike Sales** dataset using `ggplot2` for data visualization. The plots are made interactive using the `plotly` package.
+
+------------------------------------------------------------------------
+
+## Load the Data
+
+```{r}
+# Load required libraries 
+library(readxl) 
+library(dplyr) 
+library(ggplot2)
+library(plotly)
+getwd()
+
+
+```
+
+# Read the Excel file (update the file path if necessary)
+
+```{r}
+bike_sales <- read_excel("D:\\ERU\\2024- 2025\\Fall 2024-2025\\Statistical Computing Fall 2024\\Bike Sales.xlsx")
+
+
+```
+
+# Display the first few rows
+
+```{r}
+head(bike_sales)
+```
+
+## Basic Summary of the Data
+
+```{r}
+# Summary statistics
+summary(bike_sales)
+
+# Check the structure of the data
+str(bike_sales)
+```
+
+### Total Cost by Product
+
+```{r}
+cost_by_product <- bike_sales %>%
+  group_by(Product_Description) %>%
+  summarise(Total_Cost = sum(Cost, na.rm = TRUE))
+
+p1 <- ggplot(cost_by_product, aes(x = reorder(Product_Description, Total_Cost), y = Total_Cost, fill = Product_Description)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Total Cost by Product", x = "Product", y = "Total Cost") +
+  theme_minimal()
+
+ggplotly(p1)
+
+```
+
+### Total Cost by Branch
+
+```{r}
+cost_by_branch <- bike_sales %>%
+  group_by(Branch) %>%
+  summarise(Total_Cost = sum(Cost, na.rm = TRUE))
+
+p2 <- ggplot(cost_by_branch, aes(x = Branch, y = Total_Cost, fill = Branch)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total Cost by Branch", x = "Branch", y = "Total Cost") +
+  theme_minimal()
+
+ggplotly(p2)
+
+```
+
+### Total Cost by Customer Gender
+
+```{r}
+cost_by_gender <- bike_sales %>%
+  group_by(Customer_Gender) %>%
+  summarise(Total_Cost = sum(Cost, na.rm = TRUE))
+
+p3 <- ggplot(cost_by_gender, aes(x = Customer_Gender, y = Total_Cost, fill = Customer_Gender)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total Cost by Customer Gender", x = "Gender", y = "Total Cost") +
+  theme_minimal()
+
+ggplotly(p3)
+
+```
+
+### Total Cost by Product by Branch
+
+```{r}
+cost_by_product_branch <- bike_sales %>%
+  group_by(Product_Description, Branch) %>%
+  summarise(Total_Cost = sum(Cost, na.rm = TRUE))
+
+p4 <- ggplot(cost_by_product_branch, aes(x = Branch, y = Total_Cost, fill = Product_Description)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Cost by Product by Branch", x = "Branch", y = "Total Cost") +
+  theme_minimal()
+
+ggplotly(p4)
+
+```
+
+### Total Cost by Product by Customer Gender
+
+```{r}
+cost_by_product_gender <- bike_sales %>%
+  group_by(Product_Description, Customer_Gender) %>%
+  summarise(Total_Cost = sum(Cost, na.rm = TRUE))
+
+p5 <- ggplot(cost_by_product_gender, aes(x = Customer_Gender, y = Total_Cost, fill = Product_Description)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Cost by Product by Customer Gender", x = "Gender", y = "Total Cost") +
+  theme_minimal()
+
+ggplotly(p5)
+
+```
+
+### Total Revenue by Product
+
+```{r}
+revenue_by_product <- bike_sales %>%
+  group_by(Product_Description) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE))
+
+p6 <- ggplot(revenue_by_product, aes(x = reorder(Product_Description, Total_Revenue), y = Total_Revenue, fill = Product_Description)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Total Revenue by Product", x = "Product", y = "Total Revenue") +
+  theme_minimal()
+
+ggplotly(p6)
+
+```
+
+### Total Revenue by Branch
+
+```{r}
+revenue_by_branch <- bike_sales %>%
+  group_by(Branch) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE))
+
+p7 <- ggplot(revenue_by_branch, aes(x = Branch, y = Total_Revenue, fill = Branch)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total Revenue by Branch", x = "Branch", y = "Total Revenue") +
+  theme_minimal()
+
+ggplotly(p7)
+
+```
+
+### Total Revenue by Product by Branch
+
+```{r}
+revenue_by_product_branch <- bike_sales %>%
+  group_by(Product_Description, Branch) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE))
+
+p8 <- ggplot(revenue_by_product_branch, aes(x = Branch, y = Total_Revenue, fill = Product_Description)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Revenue by Product by Branch", x = "Branch", y = "Total Revenue") +
+  theme_minimal()
+
+ggplotly(p8)
+
+```
+
+### Total Revenue by Product by Customer Gender
+
+```{r}
+revenue_by_product_gender <- bike_sales %>%
+  group_by(Product_Description, Customer_Gender) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE))
+
+p9 <- ggplot(revenue_by_product_gender, aes(x = Customer_Gender, y = Total_Revenue, fill = Product_Description)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Revenue by Product by Customer Gender", x = "Gender", y = "Total Revenue") +
+  theme_minimal()
+
+ggplotly(p9)
+
+```
+
+### Total Profit by Branch
+
+```{r}
+profit_by_branch <- bike_sales %>%
+  group_by(Branch) %>%
+  summarise(Total_Profit = sum(Profit, na.rm = TRUE))
+
+p11 <- ggplot(profit_by_branch, aes(x = Branch, y = Total_Profit, fill = Branch)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total Profit by Branch", x = "Branch", y = "Total Profit") +
+  theme_minimal()
+
+ggplotly(p11)
+
+```
+
+### Total Profit by Customer Gender
+
+```{r}
+profit_by_gender <- bike_sales %>%
+  group_by(Customer_Gender) %>%
+  summarise(Total_Profit = sum(Profit, na.rm = TRUE))
+
+p12 <- ggplot(profit_by_gender, aes(x = Customer_Gender, y = Total_Profit, fill = Customer_Gender)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total Profit by Customer Gender", x = "Gender", y = "Total Profit") +
+  theme_minimal()
+
+ggplotly(p12)
+
+```
+
+### Total Profit by Branch by Customer Gender
+
+```{r}
+# Aggregate Total Profit by Branch and Customer Gender
+profit_by_branch_gender <- bike_sales %>%
+  group_by(Branch, Customer_Gender) %>%
+  summarise(Total_Profit = sum(Profit, na.rm = TRUE))
+
+# Create a grouped bar chart
+p15 <- ggplot(profit_by_branch_gender, aes(x = Branch, y = Total_Profit, fill = Customer_Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Profit by Branch by Customer Gender", 
+       x = "Branch", 
+       y = "Total Profit") +
+  theme_minimal()
+
+# Convert to an interactive plot
+ggplotly(p15)
+
+```
+
+```{r}
+colnames(bike_sales)
+
+```
+
+```{r}
+# Ensure the Date column is in Date format
+bike_sales$Date <- as.Date(bike_sales$Date)
+
+# Aggregate revenue by date
+revenue_trend <- bike_sales %>%
+  group_by(Date) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE))
+
+# Create a line chart
+p2 <- ggplot(revenue_trend, aes(x = Date, y = Total_Revenue)) +
+  geom_line(color = "blue", linewidth = 1) +  
+  labs(title = "Revenue Trend Over Time", x = "Date", y = "Total Revenue") +
+  theme_minimal()
+
+# Convert to an interactive plot
+ggplotly(p2)
+
+
+```
+
+## Top Products by Revenue
+
+```{r}
+# Aggregate total revenue by product description
+revenue_by_product <- bike_sales %>%
+  group_by(Product_Description) %>%
+  summarise(Total_Revenue = sum(Revenue, na.rm = TRUE)) %>%
+  arrange(desc(Total_Revenue)) %>%
+  slice(1:10)  # Select the top 10 products
+
+# Create a bar chart
+p3 <- ggplot(revenue_by_product, aes(x = reorder(Product_Description, Total_Revenue), y = Total_Revenue, fill = Product_Description)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Top 10 Products by Revenue", x = "Product Description", y = "Total Revenue") +
+  theme_minimal()
+
+# Convert to an interactive plot
+ggplotly(p3)
+
+```
+
+##Scatter Plot: Unit Price vs. Revenue
+
+```{r}
+# Create a scatter plot
+p4 <- ggplot(bike_sales, aes(x = Unit_Price, y = Revenue, color = Branch)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Relationship Between Unit Price and Revenue", x = "Unit Price", y = "Revenue") +
+  theme_minimal()
+
+# Convert to an interactive plot
+ggplotly(p4)
+
+```
+
+##Scatter Plot: Unit Price vs. Unit Cost
+
+```{r}
+# Create a scatter plot
+p4 <- ggplot(bike_sales, aes(x = Unit_Price, y = Unit_Cost, color = Branch)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Relationship Between Unit Price and Unit Cost", x = "Unit Price", y = "Unit_Cost") +
+  theme_minimal()
+
+# Convert to an interactive plot
+ggplotly(p4)
+```
+
+##Scatter Plot: Cost vs. Revenue
+
+```{r}
+# Create a scatter plot
+p4 <- ggplot(bike_sales, aes(x = Cost, y = Revenue, color = Branch)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Relationship Between Cost and Revenue", x = "Cost",
+       y = "Revenue") +
+  theme_minimal()
+
+# Convert to an interactive plot
+ggplotly(p4)
+
+```
