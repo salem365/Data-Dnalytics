@@ -1,0 +1,703 @@
+---
+title: "Puma sales project"
+editor: visual
+format: html
+toc: true
+code-fold: true
+---
+
+## Our Libraries
+
+```{r ,message=FALSE , warning=FALSE}
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(lubridate)
+library(scales)
+library(shiny)
+library(shinydashboard)
+library(htmltools)
+library(fBasics)
+library(readr)
+library(dplyr)
+library(caret)
+library(car)
+```
+
+## Importing the data
+
+```{r ,message=FALSE , warning=FALSE}
+file_path <- "D:\\BT\\PROJECTS\\New folder\\sales adidas,puma,nike_project_BA_\\Project_R_puma\\puma.xlsx"  
+
+# Import data from the specific sheet (e.g., "xlnxx")
+data <- read_excel(file_path)
+```
+
+## names of columns
+
+```{r ,message=FALSE , warning=FALSE}
+names(data)
+```
+
+## Summary of data
+
+```{r ,message=FALSE , warning=FALSE}
+summary(data)
+```
+
+## Head of Data
+
+```{r,message=FALSE , warning=FALSE}
+head(data)
+```
+
+## structure of data
+
+```{r,message=FALSE , warning=FALSE}
+str(data)
+```
+
+## Data Cleaning
+
+#### Identify columns with missing values and their counts
+
+```{r,message=FALSE , warning=FALSE}
+# Identify columns with missing values and their counts
+missing_summary <- colSums(is.na(data))
+# Filter columns that have missing values
+missing_columns <- missing_summary[missing_summary > 0]
+# Print the summary of missing values
+if (length(missing_columns) > 0) {
+  print("Columns with missing values and their counts:")
+  print(missing_columns)
+} else {
+  print("No missing values in the dataset.")
+}
+```
+
+## Percentage of missing values in each column
+
+```{r,message=FALSE , warning=FALSE}
+missing_percentage <- colSums(is.na(data)) / nrow(data) * 100
+missing_percentage <- missing_percentage[missing_percentage > 0]
+print(missing_percentage)
+```
+
+## function to clean numeric columns
+
+```{r,message=FALSE , warning=FALSE}
+clean_numeric_columns <- function(data, columns) {
+  for (col in columns) {
+    if (col %in% colnames(data)) {
+      avg <- mean(data[[col]], na.rm = TRUE)    
+      data[[col]][is.na(data[[col]])] <- avg  
+    }
+  }
+  return(data)
+}
+```
+
+## function to Clean categorical column
+
+```{r,message=FALSE , warning=FALSE}
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+# Clean missing values in any categorical column using mode
+clean_categorical_column <- function(data, column_name) {
+  if (column_name %in% colnames(data)) {
+    # Calculate mode of the column, ignoring NA values
+    mode_value <- getmode(data[[column_name]][!is.na(data[[column_name]])])
+    
+    # Replace missing values (NA) with mode
+    data[[column_name]][is.na(data[[column_name]])] <- mode_value
+  } else {
+    warning(paste("Column", column_name, "does not exist in the dataset."))
+  }
+  return(data)
+}
+```
+
+# Apply the cleaning function to any categorical column
+
+```{r,message=FALSE , warning=FALSE}
+# Apply the cleaning function to any categorical column
+data <- clean_categorical_column(data, "Retailer")
+```
+
+# Apply the cleaning function to any categorical column
+
+```{r,message=FALSE , warning=FALSE}
+# Apply the cleaning function to the dataset
+columns_to_clean <- c("Units Sold", "Total Sales", "Operating Profit", "Operating Margin","Price per Unit")
+data <- clean_numeric_columns(data, columns_to_clean)
+```
+
+## tibble
+
+```{r,message=FALSE , warning=FALSE}
+tibble(data)
+```
+
+## Data Manipulation
+
+```{r,message=FALSE , warning=FALSE}
+puma_data_trans <- data %>%
+  mutate(
+    `Total Sales` = round(as.numeric(`Total Sales`), 2),  
+    `Operating Margin` = round(as.numeric(`Operating Margin`), 2),
+    `Operating Profit` = round(as.numeric(`Operating Profit`), 2),
+    `Units Sold` = round(as.numeric(`Units Sold`), 0),  # 
+    `Price per Unit` = round(as.numeric(`Price per Unit`), 2),
+    `Invoice Year` = format(as.Date(`Invoice Date`, "%Y-%m-%d"), "%Y"),
+    `Invoice Month` = format(as.Date(`Invoice Date`, "%Y-%m-%d"), "%m"),
+    `Invoice Day` = format(as.Date(`Invoice Date`, "%Y-%m-%d"), "%d"),
+    `Invoice Quarter` = case_when(
+      `Invoice Month` %in% c("01", "02", "03") ~ "Q1",
+      `Invoice Month` %in% c("04", "05", "06") ~ "Q2",
+      `Invoice Month` %in% c("07", "08", "09") ~ "Q3",
+      `Invoice Month` %in% c("10", "11", "12") ~ "Q4"
+    ),
+    `Month Name` = format(as.Date(`Invoice Date`, "%Y-%m-%d"), "%B"),
+    `Day Name` = weekdays(as.Date(`Invoice Date`, "%Y-%m-%d"))
+  )
+head(puma_data_trans)
+```
+
+```         
+```
+
+## Statistics
+
+```{r,message=FALSE , warning=FALSE}
+basicStats(puma_data_trans$`Price per Unit`)
+basicStats(puma_data_trans$`Total Sales`)
+basicStats(puma_data_trans$`Operating Margin`)
+basicStats(puma_data_trans$`Operating Profit`)
+basicStats(puma_data_trans$`Units Sold`)
+```
+
+## Descriptive Questions
+
+```{r,message=FALSE , warning=FALSE}
+## What are the total sales for each year?
+ggplot(puma_data_trans, aes(`Invoice Year`, `Total Sales`, fill = `Invoice Year`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Year", x = "Year", y = "Total Sales")
+```
+
+```{r,message=FALSE , warning=FALSE}
+## What are the average operating margins by region?
+ggplot(puma_data_trans, aes(`Region`, `Operating Margin`, fill = `Region`)) +
+  geom_bar(stat = "summary", fun = "mean") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Average Operating Margin by Region", x = "Region", y = "Average Operating Margin")
+```
+
+```{r,message=FALSE , warning=FALSE}
+## How many units were sold by each retailer?
+ggplot(puma_data_trans, aes(`Retailer`, `Units Sold`, fill = `Retailer`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Units Sold by Retailer", x = "Retailer", y = "Units Sold")
+```
+
+```{r,message=FALSE , warning=FALSE}
+## What is the price per unit for each product category?
+ggplot(puma_data_trans, aes(`Product`, `Price per Unit`, fill = `Product`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Price per Unit by Product", x = "Product", y = "Price per Unit")
+```
+
+```{r,message=FALSE , warning=FALSE}
+## What are the total sales per month?
+ggplot(puma_data_trans, aes(`Month Name`, `Total Sales`, fill = `Month Name`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Month", x = "Month", y = "Total Sales") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r,message=FALSE , warning=FALSE}
+## What is the total operating profit by product?
+ggplot(puma_data_trans, aes(`Product`, `Operating Profit`, fill = `Product`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Operating Profit by Product", x = "Product", y = "Operating Profit")
+```
+
+```{r,message=FALSE , warning=FALSE}
+## What is the distribution of sales across different quarters?
+ggplot(puma_data_trans, aes(`Invoice Quarter`, `Total Sales`, fill = `Invoice Quarter`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Quarter", x = "Quarter", y = "Total Sales")
+```
+
+```{r,message=FALSE , warning=FALSE}
+  ## Which day of the week sees the highest total sales?
+  ggplot(puma_data_trans, aes(`Day Name`, `Total Sales`, fill = `Day Name`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Total Sales by Day of the Week", x = "Day of the Week", y = "Total Sales") +
+  scale_y_continuous(labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Exploratory Questions
+
+```{r,message=FALSE , warning=FALSE}
+##  How does total sales vary by product category over the months?
+ggplot(puma_data_trans, aes(`Month Name`, `Total Sales`, fill = `Product`)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Product over Months", x = "Month", y = "Total Sales")
+```
+
+```{r,message=FALSE , warning=FALSE}
+  ## How does operating profit vary across different regions and months?
+ggplot(puma_data_trans, aes(`Month Name`, `Operating Profit`, fill = `Region`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Operating Profit by Region and Month", x = "Month", y = "Operating Profit") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r,message=FALSE , warning=FALSE}
+  ## How do sales compare across quarters and different sales methods?
+ggplot(puma_data_trans, aes(`Invoice Quarter`, `Total Sales`, fill = `Sales Method`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Sales by Quarter and Sales Method", x = "Quarter", y = "Total Sales")
+```
+
+```{r,message=FALSE , warning=FALSE}
+  ## Is there a pattern in total sales by day of the week for each region?
+ggplot(puma_data_trans, aes(`Day Name`, `Total Sales`, fill = `Region`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Sales by Day of the Week and Region", x = "Day of the Week", y = "Total Sales")
+```
+
+```{r,message=FALSE , warning=FALSE}
+## How does total sales vary for each retailer across the quarters?
+ggplot(puma_data_trans, aes(`Invoice Quarter`, `Total Sales`, fill = `Retailer`)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Sales by Quarter and Retailer", x = "Quarter", y = "Total Sales")
+```
+
+```{r,message=FALSE , warning=FALSE}
+  ## What is the trend in total sales by year and product category?
+ggplot(puma_data_trans, aes(`Invoice Year`, `Total Sales`, color = `Product`)) +
+  geom_line() +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Sales Trend by Year and Product", x = "Year", y = "Total Sales")
+```
+
+## Predictive Questions
+
+```{r,message=FALSE , warning=FALSE}
+ ## Can we predict total sales based on price per unit and units sold?
+  model_sales <- lm(`Total Sales` ~ `Price per Unit` + `Units Sold`, data = puma_data_trans)
+summary(model_sales)
+```
+
+```{r,message=FALSE , warning=FALSE}
+# Step 1: Prepare the data (make sure there are no missing values)
+puma_data_trans_clean <- puma_data_trans %>%
+  drop_na(`Total Sales`, `Units Sold`, `Price per Unit`, `Operating Profit`, `Operating Margin`)
+
+# Step 2: Fit a linear regression model to predict `Total Sales`
+model <- lm(`Total Sales` ~ `Units Sold` + `Price per Unit` + `Operating Profit` + `Operating Margin`, data = puma_data_trans_clean)
+
+# Step 3: Summarize the model
+summary(model)
+
+# Step 4: Make predictions using the model
+puma_data_trans_clean$predicted_sales <- predict(model, newdata = puma_data_trans_clean)
+
+# Step 5: Visualize actual vs predicted values
+library(ggplot2)
+ggplot(puma_data_trans_clean, aes(`Total Sales`, predicted_sales)) +
+  geom_point(color = 'blue') +
+  geom_smooth(method = 'lm', se = FALSE, color = 'red') +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Actual vs Predicted Total Sales", x = "Actual Total Sales", y = "Predicted Total Sales") +
+  theme_minimal()
+
+# Calculate R-squared for the linear model
+summary(model)$r.squared
+```
+
+```{r,message=FALSE , warning=FALSE}
+##Cluster 1 might represent a group of data points where total sales are high and units sold are also high.
+##Cluster 2 could represent a group where total sales are lower but the price per unit is higher.
+##Cluster 3 might represent a group where operating profit is high but total sales are moderate.
+```
+
+```{r,message=FALSE , warning=FALSE}
+# Select numeric columns for clustering
+puma_data_trans_cluster <- puma_data_trans_clean %>%
+  select(`Total Sales`, `Units Sold`, `Price per Unit`, `Operating Profit`)
+
+# Normalize the data
+puma_data_trans_cluster_scaled <- scale(puma_data_trans_cluster)
+
+# Perform k-means clustering (for example, 3 clusters)
+set.seed(123)  # For reproducibility
+kmeans_result <- kmeans(puma_data_trans_cluster_scaled, centers = 3)
+
+# Add the cluster results to the original data
+puma_data_trans_clean$cluster <- as.factor(kmeans_result$cluster)
+
+# Visualize the clusters
+ggplot(puma_data_trans_clean, aes(`Total Sales`, `Units Sold`, color = cluster)) +
+  geom_point() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Clustering Retailers by Sales and Units Sold", x = "Total Sales", y = "Units Sold") +
+  theme_minimal()
+
+# View the centroids (mean values) for each cluster
+kmeans_result$centers
+```
+
+```{r,message=FALSE , warning=FALSE}
+##What is the breakdown of sales by retailers, and how does it vary across different retailers?
+  Sales_by_retailers <- puma_data_trans %>%
+  group_by(Retailer) %>%
+  summarise(Total_Sales_Retail = sum(`Total Sales`))
+tibble(Sales_by_retailers)
+
+ggplot(Sales_by_retailers, aes(x = Retailer, y = Total_Sales_Retail, fill = Retailer)) + 
+  geom_col() + 
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Retailer", y = "Total Sales") + 
+  theme_dark()
+```
+
+```{r,message=FALSE , warning=FALSE}
+##2. How does the total profit of retailers compare and vary across different retailers?
+Profit_by_retailers <- puma_data_trans %>%
+  group_by(Retailer) %>%
+  summarise(Profit = sum(`Operating Profit`))
+tibble(Profit_by_retailers)
+
+ggplot(Profit_by_retailers, aes(x = Retailer, y = Profit, fill = Retailer)) + 
+  geom_col() + 
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Operating Profit by Retailer", y = "Operating Profit") + 
+  theme_dark()
+```
+
+```{r,message=FALSE , warning=FALSE}
+##3. What is the breakdown of sales by Product?
+Sales_by_Product <- puma_data_trans %>%
+  group_by(Product) %>%
+  summarise(Product_sales = sum(`Total Sales`))
+tibble(Sales_by_Product)
+
+ggplot(Sales_by_Product, aes(x = Product, y = Product_sales, fill = Product)) + 
+  geom_col() + 
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Product", y = "Total Sales") + 
+  theme_dark() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r,message=FALSE , warning=FALSE}
+##4. What is the top sales method?
+Method <- puma_data_trans %>%
+  group_by(`Sales Method`) %>%
+  summarise(Value = sum(`Total Sales`, na.rm = TRUE)) %>%
+  mutate(Percentage = Value / sum(Value) * 100)
+tibble(Method)
+ggplot(Method, aes(x = "", y = Value, fill = `Sales Method`)) + 
+  geom_bar(stat = "identity", width = 1) +  
+  coord_polar(theta = "y") +      
+  theme_minimal() + 
+  labs(title = "Total Sales by Sales Method") +  
+  theme(axis.text.x = element_blank(),  
+        axis.title = element_blank(),  
+        plot.title = element_text(hjust = 0.5)) +      
+  geom_text(aes(label = paste0(round(Percentage, 1), "%")),    
+            position = position_stack(vjust = 0.5),   
+            color = "white", size = 5)
+```
+
+```{r,message=FALSE , warning=FALSE}
+## 5. What is the average price of products per unit?
+Average_price <- puma_data_trans %>%
+  group_by(Product) %>%
+  summarise(Avg_Price_Per_Unit = mean(`Price per Unit`))
+tibble(Average_price)
+
+ggplot(Average_price, aes(x = Product, y = Avg_Price_Per_Unit, fill = Product)) + 
+  geom_col() + 
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Average Price per Unit by Product", y = "Average Price per Unit (USD)") +      
+  theme_dark() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+
+```{r,message=FALSE , warning=FALSE}
+##what is the total monthly sales for each retailer
+sales_trend <- puma_data_trans %>%
+  group_by(Retailer, `Month Name`) %>%
+  summarise(Total_monthly_sales = sum(`Total Sales`, na.rm = TRUE))
+tibble(sales_trend)
+ggplot(data = sales_trend, aes(x = `Month Name`, y = Total_monthly_sales, fill = Retailer)) +
+  geom_bar(stat = "identity") +    
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "MONTHLY SALES BY RETAILERS", x = "Month", y = "Monthly Sales (in Millions)") +  
+  theme(axis.title = element_text(color = "brown", face = "bold", size = 12),
+        plot.title = element_text(face = "bold"),
+        axis.line = element_line(),
+        panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 90)) +  
+  facet_wrap(~Retailer) +      
+  coord_flip()
+```
+
+```{r,message=FALSE , warning=FALSE}
+##Product Sales by Region
+region_product_sales <- puma_data_trans %>%
+  group_by(Region, Product) %>%
+  summarise(region_sales = sum(`Total Sales`, na.rm = TRUE))
+tibble(region_product_sales)
+ggplot(data = region_product_sales, aes(x = Region, y = region_sales, fill = Product)) +
+  geom_bar(stat = "identity", position = position_dodge()) +     
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "PRODUCT SALES BY REGION", x = "Region", y = "Sales (in Millions)") +   
+  theme(axis.title = element_text(face = "bold", size = 12, colour = "brown"),
+        plot.title = element_text(face = "bold"),
+        axis.line = element_line(),
+        panel.grid = element_blank(),
+        axis.text = element_text(size = 10, colour = "black")) +  
+  coord_flip()   
+```
+
+## Linear Regression
+
+```{r ,message=FALSE , warning=FALSE}
+# Linear regression model
+linear_model <- lm(`Total Sales` ~ `Units Sold` + `Price per Unit` + `Operating Profit` + `Operating Margin`, data = puma_data_trans)
+summary(linear_model)
+
+# Units Sold و Total Sales
+ggplot(puma_data_trans, aes(`Units Sold`, `Total Sales`)) +
+  geom_point(alpha = 0.5, color = "blue") +  
+  geom_smooth(method = "lm", color = "red", se = FALSE) + 
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Linear Regression: Total Sales vs. Units Sold",
+       x = "Units Sold", y = "Total Sales") +
+  theme_minimal()
+
+# Operating Profit و Total Sales
+ggplot(puma_data_trans, aes(`Operating Profit`, `Total Sales`)) +
+  geom_point(alpha = 0.5, color = "purple") +  
+  geom_smooth(method = "lm", color = "red", se = FALSE) + 
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Linear Regression: Total Sales vs. Operating Profit",
+       x = "Operating Profit", y = "Total Sales") +
+  theme_minimal()
+```
+
+```{r,message=FALSE , warning=FALSE}
+# Scatter plot for Total Sales vs Units Sold with regression line
+ggplot(puma_data_trans, aes(`Units Sold`, `Total Sales`)) +
+  geom_point() + 
+  geom_smooth(method = "lm", color = "blue", se = FALSE) + 
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Total Sales vs Units Sold", x = "Units Sold", y = "Total Sales") +
+  theme_minimal()
+
+# Scatter plot for Total Sales vs Operating Profit with regression line
+ggplot(puma_data_trans, aes(`Operating Profit`, `Total Sales`)) +
+  geom_point() + 
+  geom_smooth(method = "lm", color = "blue", se = FALSE) + 
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Total Sales vs Operating Profit", x = "Operating Profit", y = "Total Sales") +
+  theme_minimal()
+```
+
+### Inferential Questions:
+
+```{r,message=FALSE , warning=FALSE}
+##Is there a relationship between the number of units sold and total sales?
+ggplot(puma_data_trans, aes(x = `Units Sold`, y = `Total Sales`)) +
+  geom_point() + 
+  geom_smooth(method = "lm", color = "blue", se = FALSE) + 
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Total Sales vs Units Sold", x = "Units Sold", y = "Total Sales") +
+  theme_minimal()
+```
+
+```{r,message=FALSE , warning=FALSE}
+##How does the operating profit relate to total sales?
+ggplot(puma_data_trans, aes(x = `Operating Profit`, y = `Total Sales`)) +
+  geom_point() + 
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs(title = "Total Sales vs Operating Profit", x = "Operating Profit", y = "Total Sales") +
+  theme_minimal()
+```
+
+## Anova
+
+```{r,message=FALSE , warning=FALSE}
+##Does the sales method (In-store, Online, Outlet) have an effect on total sales?
+anova_model <- aov(`Total Sales` ~ `Sales Method`, data = puma_data_trans)
+summary(anova_model)
+# Visualizing the ANOVA result using boxplot
+ggplot(puma_data_trans, aes(x = `Sales Method`, y = `Total Sales`, fill = `Sales Method`)) +
+  geom_boxplot() +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Sales by Sales Method", x = "Sales Method", y = "Total Sales") +
+  theme_minimal()
+```
+
+## Our simulations
+
+```{r,message=FALSE , warning=FALSE}
+library(dplyr)
+
+set.seed(1919)
+iteration <- 10000
+
+# Simulate retail data
+simulated_retail_data <- data.frame(
+  Retailer_ID = 1:iteration,
+  Invoice_Date = as.Date('2020-01-01') + sample(0:730, iteration, replace = TRUE), # Random dates in 2020-2021
+  Region = sample(c("Northeast", "Midwest", "South", "West"), iteration, replace = TRUE, prob = c(0.25, 0.25, 0.25, 0.25)),
+  City = sample(c("Albuquerque", "Anchorage", "Billings", "Boise", "Cheyenne", "Chicago", "Columbus", "Denver",
+                  "Des Moines", "Detroit", "Fargo", "Honolulu", "Indianapolis", "Las Vegas", "Los Angeles", 
+                  "Milwaukee", "Minneapolis", "Omaha", "Wichita", "St. Louis", "Sioux Falls", "Seattle", 
+                  "San Francisco", "Salt Lake City", "Portland", "Phoenix"), iteration, replace = TRUE),
+  Product = sample(c("Men's Apparel", "Men's Athletic Footwear", "Men's Street Footwear", 
+                     "Women's Apparel", "Women's Athletic Footwear", "Women's Street Footwear"), 
+                   iteration, replace = TRUE, prob = c(0.2, 0.2, 0.15, 0.2, 0.15, 0.1)),
+  Price_per_Unit = round(runif(iteration, 10, 100), 2), 
+  Units_Sold = sample(1:50, iteration, replace = TRUE), # Units between 1 and 50
+  Total_Sales = round(runif(iteration, 100, 5000), 2), # Total sales between $100 and $5000
+  Operating_Profit = round(runif(iteration, 10, 1000), 2), # Profit between $10 and $1000
+  Operating_Margin = round(runif(iteration, 0.1, 0.3), 2), # Margin between 10% and 30%
+  Sales_Method = sample(c("In-store", "Online", "Outlet"), iteration, replace = TRUE, prob = c(0.5, 0.3, 0.2)),
+  Retailer = sample(c("Amazon", "Foot Locker", "Kohl's", "Sports Direct", "Walmart", "West Gear"), iteration, replace = TRUE, prob = c(0.2, 0.2, 0.15, 0.15, 0.2, 0.1))
+)
+
+# Add derived columns
+simulated_retail_data <- simulated_retail_data %>%
+  mutate(
+    Invoice_Year = format(Invoice_Date, "%Y"),
+    Invoice_Month = format(Invoice_Date, "%m"),
+    Invoice_Day = format(Invoice_Date, "%d"),
+    Invoice_Quarter = case_when(
+      Invoice_Month %in% c("01", "02", "03") ~ "Q1",
+      Invoice_Month %in% c("04", "05", "06") ~ "Q2",
+      Invoice_Month %in% c("07", "08", "09") ~ "Q3",
+      Invoice_Month %in% c("10", "11", "12") ~ "Q4"
+    ),
+    Month_Name = format(Invoice_Date, "%B"),
+    Day_Name = weekdays(Invoice_Date)
+  )
+
+# Display the first few rows of the simulated data
+head(simulated_retail_data)
+```
+
+```{r,message=FALSE , warning=FALSE}
+tibble(simulated_retail_data)
+```
+
+## simulated Descriptive Questions
+
+```{r,message=FALSE , warning=FALSE}
+##Total sales for each year
+   ggplot(simulated_retail_data, aes(x = Invoice_Year, y = Total_Sales, fill = Invoice_Year)) +
+     geom_bar(stat = "identity") +
+     theme_minimal() +
+            scale_y_continuous(labels = scales::comma)+
+     labs(title = "Total Sales by Year", x = "Year", y = "Total Sales")
+```
+
+## simulated Exploratory Questions
+
+```{r,message=FALSE , warning=FALSE}
+ ##How does total sales vary by product category over the months? 
+   ggplot(simulated_retail_data, aes(x = Month_Name, y = Total_Sales, fill = Product)) +
+     geom_bar(stat = "summary", fun = "sum") +
+     theme_minimal() +      
+     scale_y_continuous(labels = scales::comma)+
+     labs(title = "Total Sales by Product over Months", x = "Month", y = "Total Sales")
+```
+
+```{r,message=FALSE , warning=FALSE}
+# Convert 'Product' column into dummy variables
+df <- puma_data_trans
+df$Product <- as.numeric(factor(df$Product)) - 1
+
+# Split the data into training and testing sets
+set.seed(123)
+trainIndex <- createDataPartition(df$`Total Sales`, p = 0.8, list = FALSE)
+dataTrain <- df[trainIndex, ]
+dataTest  <- df[-trainIndex, ]
+
+# Prepare the data for modeling
+x_train <- dataTrain %>% select(Product, `Price per Unit`, `Units Sold`)
+y_train <- as.numeric(gsub("[\\$,]", "", dataTrain$`Total Sales`))
+x_test <- dataTest %>% select(Product, `Price per Unit`, `Units Sold`)
+y_test <- as.numeric(gsub("[\\$,]", "", dataTest$`Total Sales`))
+
+# Build an Ordinary Least Squares (OLS) regression model
+ols_model <- lm(y_train ~ ., data = x_train)
+ols_pred <- predict(ols_model, newdata = x_test)
+
+# Compare the predicted values with the actual values
+comparison <- data.frame(Actual = y_test, OLS_Predicted = ols_pred)
+
+# Correlation matrix to check multicollinearity
+numeric_data <- df %>% select_if(is.numeric)
+correlation_matrix_aftercleaning <- cor(numeric_data, use = "complete.obs")
+
+```
+
+```{r,message=FALSE , warning=FALSE}
+print("OLS Model Summary:")
+print(summary(ols_model))
+```
+
+```{r,message=FALSE , warning=FALSE}
+print("Comparison of Actual and Predicted Values:")
+tibble(comparison)
+```
+
+```{r,message=FALSE , warning=FALSE}
+table(correlation_matrix_aftercleaning)
+```
